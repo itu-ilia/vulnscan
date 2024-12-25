@@ -38,7 +38,7 @@ export interface PortDetails extends Port {
 export interface ScanResults {
   openPorts: PortDetails[];
   totalPorts: number;
-  scanDuration: number;
+  scanDuration: number; // in seconds
 }
 
 export interface Scan {
