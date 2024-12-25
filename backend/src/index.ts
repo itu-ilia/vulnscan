@@ -8,9 +8,14 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: corsOrigin,
+  methods: ['GET', 'POST'],
+  credentials: true,
+}));
 app.use(express.json());
 
 // Routes
