@@ -5,10 +5,10 @@ const router = express.Router();
 
 router.get('/', flowController.getAllFlows);
 router.get('/active', flowController.getActiveFlows);
+router.get('/metrics', flowController.getMetrics);
 router.get('/:id', flowController.getFlowById);
 router.post('/', flowController.createFlow);
 router.get('/:id/logs', flowController.getFlowLogs);
 router.get('/:id/results', flowController.getFlowResults);
-router.get('/metrics', flowController.getMetrics);
 
 export default router; 
