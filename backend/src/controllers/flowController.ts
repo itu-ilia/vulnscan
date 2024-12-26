@@ -135,14 +135,18 @@ async function startFlowExecution(flowId: string) {
         ).length;
         const runningStep = currentFlow.steps.find(step => step.status === 'running');
         
-        // Calculate base progress from completed steps
-        let progress = (completedSteps / totalSteps) * 100;
+        // Calculate progress based on completed steps and current step progress
+        let progress = 0;
+        
+        // Add progress from completed steps
+        if (completedSteps > 0) {
+          progress = (completedSteps / totalSteps) * 100;
+        }
         
         // Add progress from the currently running step
         if (runningStep) {
-          const stepIndex = currentFlow.steps.findIndex(step => step.status === 'running');
           const stepProgress = (runningStep.progress / 100) * (100 / totalSteps);
-          progress = (stepIndex / totalSteps) * 100 + stepProgress;
+          progress += stepProgress;
         }
         
         flowStore.updateFlow(flowId, { progress: Math.round(progress) });
