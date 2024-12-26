@@ -1,18 +1,25 @@
-import { Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardPage from './pages/DashboardPage';
 import ScanDetailsPage from './pages/ScanDetailsPage';
-import PortDetailsPage from './pages/PortDetailsPage';
-import ViewReportPage from './pages/ViewReportPage';
+import ServiceReportPage from './pages/ServiceReportPage';
+import Layout from './components/Layout';
 
-export default function App() {
+function App() {
   return (
-    <div className="min-h-screen bg-gray-100">
+    <Router>
       <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/scans/:id" element={<ScanDetailsPage />} />
-        <Route path="/ports/:scanId/:portNumber" element={<PortDetailsPage />} />
-        <Route path="/scans/:id/report" element={<ViewReportPage />} />
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="scans/:scanId" element={<ScanDetailsPage />} />
+          <Route
+            path="scans/:scanId/services/:serviceId"
+            element={<ServiceReportPage />}
+          />
+        </Route>
       </Routes>
-    </div>
+    </Router>
   );
 }
+
+export default App;
