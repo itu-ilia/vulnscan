@@ -21,9 +21,6 @@ export default {
           950: '#082f49',
         },
       },
-      animation: {
-        'spin-slow': 'spin 3s linear infinite',
-      },
     },
   },
   plugins: [
