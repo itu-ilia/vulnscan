@@ -32,5 +32,10 @@
   ],
   "env": {
     "VITE_API_URL": "https://vulnscan-backend.onrender.com/api"
+  },
+  "build": {
+    "env": {
+      "NODE_VERSION": "18"
+    }
   }
 } 
