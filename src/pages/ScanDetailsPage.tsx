@@ -112,13 +112,23 @@ export default function ScanDetailsPage() {
     <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <nav className="mb-6">
-          <button
-            onClick={() => navigate('/')}
-            className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 bg-white rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            <ArrowLeftIcon className="h-5 w-5 mr-2" />
-            Back to Dashboard
-          </button>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => navigate('/')}
+              className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 bg-white rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            >
+              <ArrowLeftIcon className="h-5 w-5 mr-2" />
+              Back to Dashboard
+            </button>
+            {scan.status === 'completed' && (
+              <button
+                onClick={() => navigate(`/reports/${id}`)}
+                className="inline-flex items-center px-6 py-3 text-base font-medium text-white bg-primary-600 rounded-lg shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              >
+                View Report
+              </button>
+            )}
+          </div>
         </nav>
 
         {/* Header Section */}
