@@ -13,9 +13,10 @@ class ScanStore {
       id: uuidv4(),
       target,
       method,
-      status: 'queued',
+      status: 'pending',
       progress: 0,
       startTime: new Date(),
+      lastActivity: new Date(),
       logs: []
     };
 
@@ -47,7 +48,9 @@ class ScanStore {
     scan.logs.push({
       timestamp: new Date(),
       type,
-      message
+      message,
+      node: 'scanner',
+      action: 'log'
     });
 
     this.scans.set(id, scan);
@@ -59,6 +62,7 @@ class ScanStore {
     if (!scan) return false;
 
     scan.progress = Math.min(100, Math.max(0, progress));
+    scan.lastActivity = new Date();
     this.scans.set(id, scan);
     return true;
   }
@@ -71,6 +75,7 @@ class ScanStore {
     scan.progress = 100;
     scan.endTime = new Date();
     scan.results = results;
+    scan.lastActivity = new Date();
 
     this.scans.set(id, scan);
     return true;
@@ -82,6 +87,7 @@ class ScanStore {
 
     scan.status = 'failed';
     scan.endTime = new Date();
+    scan.lastActivity = new Date();
     this.addLog(id, error, 'error');
 
     this.scans.set(id, scan);
