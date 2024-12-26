@@ -1,70 +1,164 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Scan } from '../types/scan';
+import { ChartBarIcon, ShieldExclamationIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { getAllScans } from '../api/scans';
+import { Scan } from '../types/scan';
 import NewScanForm from '../components/NewScanForm';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [scans, setScans] = useState<Scan[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [isNewScanModalOpen, setIsNewScanModalOpen] = useState(false);
+  const [metrics, setMetrics] = useState({
+    totalScans: 0,
+    openIssues: 0,
+    successRate: 0
+  });
 
   useEffect(() => {
     const fetchScans = async () => {
       try {
-        const scanData = await getAllScans();
-        setScans(scanData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch scans');
+        const scansData = await getAllScans();
+        setScans(scansData);
+        
+        // Calculate metrics
+        const totalScans = scansData.length;
+        const completedScans = scansData.filter(scan => scan.status === 'completed').length;
+        const openIssues = scansData.reduce((total, scan) => {
+          return total + (scan.results?.openPorts.reduce((vulns, port) => 
+            vulns + port.vulnerabilities.length, 0) || 0);
+        }, 0);
+        const successRate = totalScans ? (completedScans / totalScans) * 100 : 0;
+
+        setMetrics({
+          totalScans,
+          openIssues,
+          successRate
+        });
+      } catch (error) {
+        console.error('Failed to fetch scans:', error);
       }
     };
 
-    const interval = setInterval(() => {
-      fetchScans();
-    }, 5000);
-
     fetchScans();
-
+    const interval = setInterval(fetchScans, 5000);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* New Scan Form */}
-          <div className="lg:col-span-1">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-6">New Scan</h2>
-              <NewScanForm />
+        {/* Header with Quick Actions */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Vulnerability Scanner</h1>
+          <button
+            onClick={() => setIsNewScanModalOpen(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            Start New Scan
+          </button>
+        </div>
+
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
+          {/* Total Scans */}
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <ChartBarIcon className="h-6 w-6 text-gray-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total Scans</dt>
+                    <dd className="flex items-baseline">
+                      <div className="text-2xl font-semibold text-gray-900">{metrics.totalScans}</div>
+                    </dd>
+                  </dl>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Scans List */}
-          <div className="lg:col-span-2">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-6">Recent Scans</h2>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-                  {error}
+          {/* Open Issues */}
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <ShieldExclamationIcon className="h-6 w-6 text-red-400" />
                 </div>
-              )}
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Open Issues</dt>
+                    <dd className="flex items-baseline">
+                      <div className="text-2xl font-semibold text-gray-900">{metrics.openIssues}</div>
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              <div className="space-y-4">
-                {scans.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No scans yet</p>
-                ) : (
-                  scans.map((scan) => (
-                    <div
+          {/* Success Rate */}
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <CheckCircleIcon className="h-6 w-6 text-green-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Success Rate</dt>
+                    <dd className="flex items-baseline">
+                      <div className="text-2xl font-semibold text-gray-900">
+                        {metrics.successRate.toFixed(1)}%
+                      </div>
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Active Flows Table */}
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Active Scans</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Target
+                    </th>
+                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Start Time
+                    </th>
+                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Progress
+                    </th>
+                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {scans.map((scan) => (
+                    <tr
                       key={scan.id}
+                      className="hover:bg-gray-50 cursor-pointer"
                       onClick={() => navigate(`/scans/${scan.id}`)}
-                      className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-medium text-gray-900">{scan.target}</h3>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {scan.target}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span
-                          className={`px-2 py-1 text-sm rounded-full ${
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             scan.status === 'completed'
                               ? 'bg-green-100 text-green-800'
                               : scan.status === 'failed'
@@ -76,43 +170,47 @@ export default function DashboardPage() {
                         >
                           {scan.status}
                         </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
-                        <div>
-                          <span className="font-medium">Method:</span>{' '}
-                          <span className="capitalize">{scan.method}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(scan.startTime).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div
+                            className="bg-primary-600 h-2.5 rounded-full"
+                            style={{ width: `${scan.progress}%` }}
+                          ></div>
                         </div>
-                        <div>
-                          <span className="font-medium">Started:</span>{' '}
-                          {new Date(scan.startTime).toLocaleString()}
-                        </div>
-                        {scan.endTime && (
-                          <div>
-                            <span className="font-medium">Completed:</span>{' '}
-                            {new Date(scan.endTime).toLocaleString()}
-                          </div>
-                        )}
-                        {scan.status === 'in-progress' && (
-                          <div>
-                            <span className="font-medium">Progress:</span> {scan.progress}%
-                          </div>
-                        )}
-                      </div>
-
-                      {scan.results && (
-                        <div className="mt-2 text-sm">
-                          <span className="font-medium">Open Ports:</span>{' '}
-                          {scan.results.openPorts.length}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
+                        <span className="text-xs mt-1">{scan.progress}%</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/scans/${scan.id}`);
+                          }}
+                          className="text-primary-600 hover:text-primary-900"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
+
+        {/* New Scan Modal */}
+        {isNewScanModalOpen && (
+          <NewScanForm
+            onClose={() => setIsNewScanModalOpen(false)}
+            onScanCreated={() => {
+              setIsNewScanModalOpen(false);
+            }}
+          />
+        )}
       </div>
     </div>
   );
