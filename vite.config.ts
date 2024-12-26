@@ -11,4 +11,12 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    include: ['antd'],
+  },
+  resolve: {
+    alias: {
+      'antd/dist/antd.min.css': 'antd/dist/antd.css',
+    },
+  },
 })
