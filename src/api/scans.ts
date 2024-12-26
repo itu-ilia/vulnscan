@@ -1,4 +1,4 @@
-import { Scan, ScanMethod } from '../types/scan';
+import { ScanMethod } from '../types/scan';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -8,6 +8,7 @@ export async function createScan(target: string, method: string) {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
     body: JSON.stringify({ target, method }),
   });
 
@@ -20,7 +21,9 @@ export async function createScan(target: string, method: string) {
 }
 
 export async function getAllScans() {
-  const response = await fetch(`${API_URL}/flows`);
+  const response = await fetch(`${API_URL}/flows`, {
+    credentials: 'include'
+  });
   
   if (!response.ok) {
     const error = await response.json();
@@ -31,7 +34,9 @@ export async function getAllScans() {
 }
 
 export async function getScanById(id: string) {
-  const response = await fetch(`${API_URL}/flows/${id}`);
+  const response = await fetch(`${API_URL}/flows/${id}`, {
+    credentials: 'include'
+  });
   
   if (!response.ok) {
     const error = await response.json();
@@ -42,7 +47,9 @@ export async function getScanById(id: string) {
 }
 
 export async function getScanLogs(id: string) {
-  const response = await fetch(`${API_URL}/flows/${id}/logs`);
+  const response = await fetch(`${API_URL}/flows/${id}/logs`, {
+    credentials: 'include'
+  });
   
   if (!response.ok) {
     const error = await response.json();
@@ -53,7 +60,9 @@ export async function getScanLogs(id: string) {
 }
 
 export async function getScanResults(id: string) {
-  const response = await fetch(`${API_URL}/flows/${id}/results`);
+  const response = await fetch(`${API_URL}/flows/${id}/results`, {
+    credentials: 'include'
+  });
   
   if (!response.ok) {
     const error = await response.json();
@@ -64,7 +73,9 @@ export async function getScanResults(id: string) {
 }
 
 export async function getMetrics() {
-  const response = await fetch(`${API_URL}/metrics`);
+  const response = await fetch(`${API_URL}/flows/metrics`, {
+    credentials: 'include'
+  });
   
   if (!response.ok) {
     const error = await response.json();
