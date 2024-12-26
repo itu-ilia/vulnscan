@@ -46,6 +46,25 @@ export class FlowStore {
     return Array.from(this.flows.values());
   }
 
+  getActiveFlows(): Flow[] {
+    return Array.from(this.flows.values()).filter(
+      flow => flow.status === 'pending' || flow.status === 'in-progress'
+    );
+  }
+
+  updateFlow(id: string, updates: Partial<Flow>): Flow | undefined {
+    const flow = this.flows.get(id);
+    if (!flow) return undefined;
+
+    const updatedFlow = { ...flow, ...updates };
+    this.flows.set(id, updatedFlow);
+    return updatedFlow;
+  }
+
+  deleteFlow(id: string): boolean {
+    return this.flows.delete(id);
+  }
+
   updateFlowStatus(id: string, status: ScanStatus, error?: Flow['error']): void {
     const flow = this.flows.get(id);
     if (!flow) return;
