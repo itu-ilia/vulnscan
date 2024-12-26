@@ -132,15 +132,22 @@ async function startFlowExecution(flowId: string) {
         const completedSteps = currentFlow.steps.filter(
           step => step.status === 'completed'
         ).length;
+        const runningStep = currentFlow.steps.find(step => step.status === 'running');
         
-        // Simple progress calculation: 25% per completed step
-        const progress = completedSteps * 25;
+        // Calculate progress based on completed steps and running step
+        let progress = completedSteps * 25;
         
-        flowStore.updateFlow(flowId, { progress });
+        // Add 12.5% (half of 25%) for the running step
+        if (runningStep) {
+          progress += 12.5;
+        }
+        
+        // Update flow with current progress
+        flowStore.updateFlow(flowId, { progress: Math.round(progress) });
       }
-    }, 200);
+    }, 500);
 
-    // Update flow status to in-progress with more detailed steps
+    // Update flow status to in-progress with initial steps
     flowStore.updateFlow(flowId, {
       status: 'in-progress',
       progress: 0,
@@ -160,7 +167,7 @@ async function startFlowExecution(flowId: string) {
     if (initStep) {
       initStep.status = 'running';
       flowStore.updateFlow(flowId, { steps: flow.steps });
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       initStep.status = 'completed';
       initStep.progress = 100;
@@ -175,6 +182,7 @@ async function startFlowExecution(flowId: string) {
       flowStore.updateFlow(flowId, { steps: flow.steps });
       flowStore.addLog(flowId, 'info', 'scanner', 'port_scan', 'Starting port discovery');
 
+      await new Promise(resolve => setTimeout(resolve, 3000));
       const ports = await mockPortScan(flow.target, flow.method);
       
       portStep.status = 'completed';
@@ -196,6 +204,7 @@ async function startFlowExecution(flowId: string) {
       flowStore.updateFlow(flowId, { steps: flow.steps });
       flowStore.addLog(flowId, 'info', 'scanner', 'service_detection', 'Starting service detection and vulnerability analysis');
 
+      await new Promise(resolve => setTimeout(resolve, 3000));
       const results = await mockFindVulnerabilities(flow.target, flow.method);
       
       serviceStep.status = 'completed';
@@ -225,7 +234,7 @@ async function startFlowExecution(flowId: string) {
       flowStore.updateFlow(flowId, { steps: flow.steps });
       flowStore.addLog(flowId, 'info', 'scanner', 'report', 'Generating scan report');
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       reportStep.status = 'completed';
       reportStep.progress = 100;
