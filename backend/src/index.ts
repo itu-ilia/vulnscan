@@ -11,7 +11,8 @@ const corsOptions = {
   origin: [
     'http://localhost:5173',
     'https://vuln-scan.vercel.app',
-    'https://vulnscan.vercel.app'
+    'https://vulnscan.vercel.app',
+    'https://vulnscan-804ag3pgn-illias-projects-265637a7.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
