@@ -47,7 +47,55 @@ const mockPorts: Port[] = [
 ];
 
 export const scanController = {
-  getOpenPorts: (req: Request, res: Response) => {
-    res.json(mockPorts);
+  createScan: (req: Request, res: Response) => {
+    try {
+      const { target, method } = req.body;
+      if (!target || !method) {
+        return res.status(400).json({ error: 'Target and method are required' });
+      }
+      res.status(201).json({ id: '123', target, method, status: 'pending' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to create scan' });
+    }
+  },
+
+  getAllScans: (req: Request, res: Response) => {
+    try {
+      res.json([
+        { id: '123', target: 'example.com', method: 'normal', status: 'completed' }
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to retrieve scans' });
+    }
+  },
+
+  getScanById: (req: Request, res: Response) => {
+    try {
+      const scan = { id: req.params.id, target: 'example.com', method: 'normal', status: 'completed' };
+      res.json(scan);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to retrieve scan' });
+    }
+  },
+
+  getScanLogs: (req: Request, res: Response) => {
+    try {
+      res.json([
+        { timestamp: new Date(), type: 'info', message: 'Scan started' }
+      ]);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to retrieve scan logs' });
+    }
+  },
+
+  getScanResults: (req: Request, res: Response) => {
+    try {
+      res.json({
+        openPorts: mockPorts,
+        vulnerabilities: []
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to retrieve scan results' });
+    }
   }
 }; 

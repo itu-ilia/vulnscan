@@ -1,17 +1,14 @@
 import express from 'express';
-import { FlowController } from '../controllers/flowController';
+import { flowController } from '../controllers/flowController';
 
 const router = express.Router();
-const flowController = new FlowController();
 
-// Flow endpoints
-router.get('/flows', flowController.getFlows);
-router.get('/flows/:id', flowController.getFlow);
-router.post('/flows', flowController.createFlow);
-router.get('/flows/:id/logs', flowController.getFlowLogs);
-router.get('/flows/:id/results', flowController.getFlowResults);
-
-// Metrics endpoint
+router.get('/', flowController.getAllFlows);
+router.get('/active', flowController.getActiveFlows);
+router.get('/:id', flowController.getFlowById);
+router.post('/', flowController.createFlow);
+router.get('/:id/logs', flowController.getFlowLogs);
+router.get('/:id/results', flowController.getFlowResults);
 router.get('/metrics', flowController.getMetrics);
 
 export default router; 

@@ -4,6 +4,24 @@ export type LogType = 'info' | 'warning' | 'error' | 'success';
 export type StepStatus = 'pending' | 'running' | 'completed' | 'error';
 export type ImpactLevel = 'None' | 'Low' | 'Medium' | 'High' | 'Critical';
 
+export interface Scan {
+  id: string;
+  target: string;
+  method: ScanMethod;
+  status: ScanStatus;
+  progress: number;
+  startTime: Date;
+  endTime?: Date;
+  lastActivity: Date;
+  logs: LogEntry[];
+  results?: ScanResults;
+  error?: {
+    code: string;
+    message: string;
+    details?: string;
+  };
+}
+
 export interface LogEntry {
   timestamp: Date;
   type: LogType;
