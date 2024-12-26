@@ -78,15 +78,15 @@ export default function ScanDetailsPage() {
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
+        <nav className="mb-6">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center text-gray-600 hover:text-gray-900"
+            className="inline-flex items-center px-4 py-2 text-sm text-gray-600 bg-white rounded-md shadow hover:bg-gray-50"
           >
             <ArrowLeftIcon className="h-5 w-5 mr-2" />
             Back to Dashboard
           </button>
-        </div>
+        </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left column: Scan Details and Logs */}

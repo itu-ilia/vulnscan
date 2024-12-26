@@ -66,24 +66,22 @@ export default function PortDetailsPage() {
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
-              Back to Dashboard
-            </button>
-            <button
-              onClick={() => navigate(`/scans/${scanId}`)}
-              className="flex items-center text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
-              Back to Scan
-            </button>
-          </div>
-        </div>
+        <nav className="mb-6 flex flex-wrap gap-4">
+          <button
+            onClick={() => navigate('/')}
+            className="inline-flex items-center px-4 py-2 text-sm text-gray-600 bg-white rounded-md shadow hover:bg-gray-50"
+          >
+            <ArrowLeftIcon className="h-5 w-5 mr-2" />
+            Back to Dashboard
+          </button>
+          <button
+            onClick={() => navigate(`/scans/${scanId}`)}
+            className="inline-flex items-center px-4 py-2 text-sm text-gray-600 bg-white rounded-md shadow hover:bg-gray-50"
+          >
+            <ArrowLeftIcon className="h-5 w-5 mr-2" />
+            Back to Scan
+          </button>
+        </nav>
 
         <div className="bg-white shadow rounded-lg p-6 mb-6">
           <h1 className="text-2xl font-bold mb-4">
