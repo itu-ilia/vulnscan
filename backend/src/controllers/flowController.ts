@@ -129,29 +129,12 @@ async function startFlowExecution(flowId: string) {
     progressInterval = setInterval(() => {
       const currentFlow = flowStore.getFlow(flowId);
       if (currentFlow && currentFlow.status === 'in-progress') {
-        const totalSteps = currentFlow.steps.length;
         const completedSteps = currentFlow.steps.filter(
           step => step.status === 'completed'
         ).length;
-        const runningStep = currentFlow.steps.find(step => step.status === 'running');
         
-        // Calculate progress based on completed steps and current step progress
-        let progress = 0;
-        
-        // Add progress from completed steps
-        if (completedSteps > 0) {
-          progress = (completedSteps / totalSteps) * 100;
-        }
-        
-        // Add progress from the currently running step
-        if (runningStep) {
-          const stepContribution = 100 / totalSteps;
-          const stepProgress = (runningStep.progress / 100) * stepContribution;
-          progress += stepProgress;
-        }
-        
-        // Ensure progress doesn't exceed 100%
-        progress = Math.min(Math.round(progress), 100);
+        // Simple progress calculation: 25% per completed step
+        const progress = completedSteps * 25;
         
         flowStore.updateFlow(flowId, { progress });
       }
@@ -165,7 +148,6 @@ async function startFlowExecution(flowId: string) {
         { name: 'Initialize', status: 'pending', progress: 0 },
         { name: 'Port Discovery', status: 'pending', progress: 0 },
         { name: 'Service Detection', status: 'pending', progress: 0 },
-        { name: 'Vulnerability Analysis', status: 'pending', progress: 0 },
         { name: 'Report Generation', status: 'pending', progress: 0 }
       ]
     });
@@ -173,19 +155,12 @@ async function startFlowExecution(flowId: string) {
     // Add initial log
     flowStore.addLog(flowId, 'info', 'scanner', 'initialize', 'Starting scan initialization');
 
-    // Step 1: Initialization with gradual progress
+    // Step 1: Initialization (0-25%)
     const initStep = flow.steps.find(step => step.name === 'Initialize');
     if (initStep) {
       initStep.status = 'running';
-      initStep.progress = 0;
       flowStore.updateFlow(flowId, { steps: flow.steps });
-      
-      // Simulate gradual initialization progress
-      for (let i = 0; i <= 90; i += 10) {
-        initStep.progress = i;
-        flowStore.updateFlow(flowId, { steps: flow.steps });
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       initStep.status = 'completed';
       initStep.progress = 100;
@@ -193,20 +168,12 @@ async function startFlowExecution(flowId: string) {
       flowStore.addLog(flowId, 'success', 'scanner', 'initialize', 'Scan initialization completed');
     }
 
-    // Step 2: Port Discovery with progress updates
+    // Step 2: Port Discovery (25-50%)
     const portStep = flow.steps.find(step => step.name === 'Port Discovery');
     if (portStep) {
       portStep.status = 'running';
-      portStep.progress = 0;
       flowStore.updateFlow(flowId, { steps: flow.steps });
       flowStore.addLog(flowId, 'info', 'scanner', 'port_scan', 'Starting port discovery');
-
-      // Simulate port scanning progress
-      for (let i = 0; i <= 90; i += 10) {
-        portStep.progress = i;
-        flowStore.updateFlow(flowId, { steps: flow.steps });
-        await new Promise(resolve => setTimeout(resolve, 75));
-      }
 
       const ports = await mockPortScan(flow.target, flow.method);
       
@@ -222,52 +189,17 @@ async function startFlowExecution(flowId: string) {
       );
     }
 
-    // Step 3: Service Detection with progress updates
+    // Step 3: Service Detection and Vulnerability Analysis (50-75%)
     const serviceStep = flow.steps.find(step => step.name === 'Service Detection');
     if (serviceStep) {
       serviceStep.status = 'running';
-      serviceStep.progress = 0;
       flowStore.updateFlow(flowId, { steps: flow.steps });
-      flowStore.addLog(flowId, 'info', 'scanner', 'service_detection', 'Starting service detection');
-
-      // Simulate service detection progress
-      for (let i = 0; i <= 90; i += 10) {
-        serviceStep.progress = i;
-        flowStore.updateFlow(flowId, { steps: flow.steps });
-        await new Promise(resolve => setTimeout(resolve, 75));
-      }
-      
-      serviceStep.status = 'completed';
-      serviceStep.progress = 100;
-      flowStore.updateFlow(flowId, { steps: flow.steps });
-      flowStore.addLog(
-        flowId,
-        'success',
-        'scanner',
-        'service_detection',
-        'Service detection completed'
-      );
-    }
-
-    // Step 4: Vulnerability Analysis with detailed progress
-    const vulnStep = flow.steps.find(step => step.name === 'Vulnerability Analysis');
-    if (vulnStep) {
-      vulnStep.status = 'running';
-      vulnStep.progress = 0;
-      flowStore.updateFlow(flowId, { steps: flow.steps });
-      flowStore.addLog(flowId, 'info', 'scanner', 'vuln_scan', 'Starting vulnerability analysis');
-
-      // Simulate vulnerability scanning progress
-      for (let i = 0; i <= 90; i += 10) {
-        vulnStep.progress = i;
-        flowStore.updateFlow(flowId, { steps: flow.steps });
-        await new Promise(resolve => setTimeout(resolve, 75));
-      }
+      flowStore.addLog(flowId, 'info', 'scanner', 'service_detection', 'Starting service detection and vulnerability analysis');
 
       const results = await mockFindVulnerabilities(flow.target, flow.method);
       
-      vulnStep.status = 'completed';
-      vulnStep.progress = 100;
+      serviceStep.status = 'completed';
+      serviceStep.progress = 100;
       flowStore.updateFlow(flowId, { steps: flow.steps });
       
       // Store the results in the flow
@@ -286,20 +218,14 @@ async function startFlowExecution(flowId: string) {
       );
     }
 
-    // Step 5: Report Generation with progress simulation
+    // Step 4: Report Generation (75-100%)
     const reportStep = flow.steps.find(step => step.name === 'Report Generation');
     if (reportStep) {
       reportStep.status = 'running';
-      reportStep.progress = 0;
       flowStore.updateFlow(flowId, { steps: flow.steps });
       flowStore.addLog(flowId, 'info', 'scanner', 'report', 'Generating scan report');
 
-      // Simulate report generation progress
-      for (let i = 0; i <= 90; i += 10) {
-        reportStep.progress = i;
-        flowStore.updateFlow(flowId, { steps: flow.steps });
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       reportStep.status = 'completed';
       reportStep.progress = 100;
