@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, ClockIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
-import { Scan, LogEntry, ScanResults, LogType } from '../types/scan';
+import { ClockIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { Flow, LogEntry, ScanResults, LogType } from '../types/scan';
 import { getScanById, getScanLogs, getScanResults } from '../api/scans';
+import { Button } from 'antd';
+import { ArrowLeftOutlined, FileSearchOutlined } from '@ant-design/icons';
 
 export default function ScanDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [scan, setScan] = useState<Scan | null>(null);
+  const [scan, setScan] = useState<Flow | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [results, setResults] = useState<ScanResults | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -113,21 +115,20 @@ export default function ScanDetailsPage() {
       <div className="max-w-7xl mx-auto">
         <nav className="mb-6">
           <div className="flex space-x-4">
-            <button
+            <Button 
+              icon={<ArrowLeftOutlined />} 
               onClick={() => navigate('/')}
-              className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 bg-white rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
               Back to Dashboard
-            </button>
-            {scan.status === 'completed' && (
-              <button
-                onClick={() => navigate(`/reports/${id}`)}
-                className="inline-flex items-center px-6 py-3 text-base font-medium text-white bg-primary-600 rounded-lg shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-              >
-                View Report
-              </button>
-            )}
+            </Button>
+            <Button 
+              type="primary" 
+              icon={<FileSearchOutlined />}
+              onClick={() => navigate(`/scans/${id}/report`)}
+              disabled={!scan || scan.status !== 'completed'}
+            >
+              View Report
+            </Button>
           </div>
         </nav>
 

@@ -2,8 +2,8 @@ import { Scan, ScanMethod } from '../types/scan';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-export const createScan = async (target: string, method: ScanMethod): Promise<Scan> => {
-  const response = await fetch(`${API_URL}/scans`, {
+export async function createScan(target: string, method: string) {
+  const response = await fetch(`${API_URL}/flows`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -12,48 +12,64 @@ export const createScan = async (target: string, method: ScanMethod): Promise<Sc
   });
 
   if (!response.ok) {
-    throw new Error('Failed to create scan');
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to create scan');
   }
 
   return response.json();
-};
+}
 
-export const getAllScans = async (): Promise<Scan[]> => {
-  const response = await fetch(`${API_URL}/scans`);
-
+export async function getAllScans() {
+  const response = await fetch(`${API_URL}/flows`);
+  
   if (!response.ok) {
-    throw new Error('Failed to fetch scans');
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to fetch scans');
   }
 
   return response.json();
-};
+}
 
-export const getScanById = async (id: string): Promise<Scan> => {
-  const response = await fetch(`${API_URL}/scans/${id}`);
-
+export async function getScanById(id: string) {
+  const response = await fetch(`${API_URL}/flows/${id}`);
+  
   if (!response.ok) {
-    throw new Error('Failed to fetch scan');
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to fetch scan details');
   }
 
   return response.json();
-};
+}
 
-export const getScanLogs = async (id: string) => {
-  const response = await fetch(`${API_URL}/scans/${id}/logs`);
-
+export async function getScanLogs(id: string) {
+  const response = await fetch(`${API_URL}/flows/${id}/logs`);
+  
   if (!response.ok) {
-    throw new Error('Failed to fetch scan logs');
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to fetch scan logs');
   }
 
   return response.json();
-};
+}
 
-export const getScanResults = async (id: string) => {
-  const response = await fetch(`${API_URL}/scans/${id}/results`);
-
+export async function getScanResults(id: string) {
+  const response = await fetch(`${API_URL}/flows/${id}/results`);
+  
   if (!response.ok) {
-    throw new Error('Failed to fetch scan results');
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to fetch scan results');
   }
 
   return response.json();
-}; 
+}
+
+export async function getMetrics() {
+  const response = await fetch(`${API_URL}/metrics`);
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to fetch metrics');
+  }
+
+  return response.json();
+} 
