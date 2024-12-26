@@ -291,56 +291,114 @@ export default function ScanDetailsPage() {
           </div>
 
           {/* Right column: Scan Results */}
-          <div className="lg:col-span-2">
-            {results && (
-              <div className="bg-white shadow rounded-lg p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-lg font-medium text-gray-900">Open Ports</h2>
-                  <div className="text-sm text-gray-500">
-                    Total Ports Scanned: {results.totalPorts}
+          <div className="lg:col-span-2 space-y-6">
+            {scan.status === 'completed' && scan.results && (
+              <>
+                <div className="bg-white shadow rounded-lg p-6">
+                  <h2 className="text-lg font-medium text-gray-900 mb-4">Scan Results</h2>
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <p className="text-sm text-gray-500">Open Ports</p>
+                      <p className="text-2xl font-semibold">{scan.results.openPorts.filter(p => p.state === 'open').length}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Total Vulnerabilities</p>
+                      <p className="text-2xl font-semibold">{scan.results.statistics.totalIssues}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Critical Issues</p>
+                      <p className="text-2xl font-semibold text-red-600">{scan.results.statistics.criticalIssues}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">High Risk Issues</p>
+                      <p className="text-2xl font-semibold text-orange-600">{scan.results.statistics.highRiskIssues}</p>
+                    </div>
+                  </div>
+
+                  <h3 className="text-md font-medium text-gray-900 mb-3">Open Ports & Services</h3>
+                  <div className="space-y-3">
+                    {scan.results.openPorts.filter(port => port.state === 'open').map((port) => (
+                      <div key={port.number} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-lg font-medium">{port.number}</span>
+                            <span className="text-gray-500">{port.protocol.toUpperCase()}</span>
+                            {port.service && (
+                              <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-sm">
+                                {port.service}
+                              </span>
+                            )}
+                          </div>
+                          {port.version && (
+                            <span className="text-sm text-gray-500">Version: {port.version}</span>
+                          )}
+                        </div>
+                        {port.vulnerabilities && port.vulnerabilities.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-sm text-gray-500 mb-1">Vulnerabilities: {port.vulnerabilities.length}</p>
+                            <div className="flex space-x-2">
+                              {port.vulnerabilities.map(vuln => (
+                                <span
+                                  key={vuln.id}
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    vuln.severity === 'critical'
+                                      ? 'bg-red-100 text-red-800'
+                                      : vuln.severity === 'high'
+                                      ? 'bg-orange-100 text-orange-800'
+                                      : vuln.severity === 'medium'
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-green-100 text-green-800'
+                                  }`}
+                                >
+                                  {vuln.severity.toUpperCase()}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
-                  {results.openPorts.map((port) => (
-                    <div
-                      key={port.number}
-                      className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer bg-gray-50"
-                      onClick={() => navigate(`/ports/${scan.id}/${port.number}`)}
+                <div className="bg-white shadow rounded-lg p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-medium text-gray-900">Detailed Report</h2>
+                    <Button 
+                      type="primary" 
+                      icon={<FileSearchOutlined />}
+                      onClick={() => navigate(`/scans/${id}/report`)}
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-lg font-medium text-gray-900">Port {port.number}</h3>
-                          <p className="text-sm text-gray-600">{port.service}</p>
-                          {port.version && (
-                            <p className="text-xs text-gray-500">{port.version}</p>
-                          )}
-                        </div>
-                        {port.vulnerabilities.length > 0 && (
-                          <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
-                            {port.vulnerabilities.length} vulnerabilities
-                          </span>
-                        )}
-                      </div>
-                      {port.vulnerabilities.length > 0 && (
-                        <div className="mt-3 pt-3 border-t">
-                          <p className="text-xs text-gray-600 mb-2">Top vulnerabilities:</p>
-                          <ul className="space-y-1">
-                            {port.vulnerabilities.slice(0, 2).map((vuln) => (
-                              <li key={vuln.id} className="text-sm text-gray-800">
-                                • {vuln.title}
-                              </li>
-                            ))}
-                            {port.vulnerabilities.length > 2 && (
-                              <li className="text-xs text-gray-500">
-                                • and {port.vulnerabilities.length - 2} more...
-                              </li>
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                      View Full Report
+                    </Button>
+                  </div>
+                  <p className="text-gray-500">
+                    View the complete vulnerability assessment report including detailed findings,
+                    recommendations, and remediation steps.
+                  </p>
+                </div>
+              </>
+            )}
+
+            {scan.status === 'in-progress' && (
+              <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-center">
+                    <ClockIcon className="h-8 w-8 text-blue-500 animate-spin-slow mx-auto mb-2" />
+                    <p className="text-gray-500">Scan in progress...</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {scan.status === 'failed' && (
+              <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-center">
+                    <XCircleIcon className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                    <p className="text-red-600">Scan failed</p>
+                    {scan.error && <p className="text-gray-500 mt-1">{scan.error.message}</p>}
+                  </div>
                 </div>
               </div>
             )}
