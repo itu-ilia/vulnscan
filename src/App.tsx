@@ -13,10 +13,7 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="scans/:scanId" element={<ScanDetailsPage />} />
-          <Route
-            path="scans/:scanId/services/:serviceId"
-            element={<ServiceReportPage />}
-          />
+          <Route path="scans/:scanId/service/:serviceId" element={<ServiceReportPage />} />
           <Route path="scans/:scanId/executive-summary" element={<ExecutiveSummaryPage />} />
         </Route>
       </Routes>
