@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import DashboardPage from './pages/DashboardPage';
 import ScanDetailsPage from './pages/ScanDetailsPage';
 import ServiceReportPage from './pages/ServiceReportPage';
+import ExecutiveSummaryPage from './pages/ExecutiveSummaryPage';
 import Layout from './components/Layout';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
             path="scans/:scanId/services/:serviceId"
             element={<ServiceReportPage />}
           />
+          <Route path="scans/:scanId/executive-summary" element={<ExecutiveSummaryPage />} />
         </Route>
       </Routes>
     </Router>
