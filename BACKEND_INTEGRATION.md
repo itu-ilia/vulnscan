@@ -1,165 +1,145 @@
-# Backend Integration Documentation for VulnScan
+# Backend Integration Guide
 
 ## Table of Contents
-1. [Architecture Overview](#architecture-overview)
+1. [Overview](#overview)
 2. [API Endpoints](#api-endpoints)
 3. [Data Models](#data-models)
 4. [Authentication](#authentication)
 5. [WebSocket Integration](#websocket-integration)
-6. [File Structure](#file-structure)
-7. [Implementation Guide](#implementation-guide)
+6. [Error Handling](#error-handling)
+7. [Environment Setup](#environment-setup)
+8. [Integration Steps](#integration-steps)
 
-## Architecture Overview
+## Overview
 
-### Tech Stack Recommendations
-- **Backend Framework**: FastAPI or Django (Python-based for easy integration with security tools)
-- **Database**: PostgreSQL (for structured scan data)
-- **Cache**: Redis (for real-time scan progress)
-- **Message Queue**: RabbitMQ/Celery (for handling long-running scans)
-- **WebSocket**: FastAPI WebSockets (for real-time updates)
-
-### High-Level Architecture
-```
-Frontend (React) <---> API Gateway <---> Backend Services
-                                        - Auth Service
-                                        - Scan Service
-                                        - Report Service
-                                        - Notification Service
-```
+This document outlines the steps and requirements for integrating the VulnScan frontend with a backend service. The application is designed to handle vulnerability scanning operations with real-time updates and comprehensive reporting features.
 
 ## API Endpoints
 
-### Authentication
+### Scan Operations
 ```typescript
-// src/api/auth.ts
-interface AuthAPI {
-  login(credentials: GoogleAuthCredentials): Promise<AuthResponse>;
-  logout(): Promise<void>;
-  refreshToken(): Promise<AuthResponse>;
-}
+// Base URL: /api/v1
 
-interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
-  user: UserProfile;
+// Scans
+POST /scans                    // Create new scan
+GET /scans                     // List all scans
+GET /scans/{id}               // Get scan details
+DELETE /scans/{id}            // Delete scan
+PUT /scans/{id}/stop          // Stop running scan
+
+// Services
+GET /scans/{id}/services             // List all services for a scan
+GET /scans/{id}/services/{serviceId} // Get service details
+
+// Reports
+GET /scans/{id}/executive-summary    // Get executive summary
+GET /scans/{id}/services/{serviceId}/report  // Get service report
+```
+
+### Expected Response Formats
+
+#### Scan List Response
+```typescript
+interface ScanListResponse {
+  scans: Array<{
+    id: string;
+    target: string;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    startTime: string;
+    endTime?: string;
+    progress: number;
+    servicesCount: number;
+  }>;
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+  };
 }
 ```
 
-### Scans
+#### Scan Details Response
 ```typescript
-// src/api/scans.ts
-interface ScanAPI {
-  createScan(params: CreateScanParams): Promise<Scan>;
-  listScans(filters?: ScanFilters): Promise<ScanListResponse>;
-  getScanDetails(scanId: string): Promise<ScanDetails>;
-  cancelScan(scanId: string): Promise<void>;
-  deleteScan(scanId: string): Promise<void>;
-}
-
-interface CreateScanParams {
+interface ScanDetailsResponse {
+  id: string;
   target: string;
-  method: 'Slow' | 'Normal' | 'Aggressive';
-  scanType: 'full' | 'specific-ports';
-  ports?: string;
-  options?: ScanOptions;
-}
-
-interface ScanFilters {
-  status?: ScanStatus[];
-  dateRange?: DateRange;
-  target?: string;
-  page?: number;
-  limit?: number;
-}
-```
-
-### Reports
-```typescript
-// src/api/reports.ts
-interface ReportAPI {
-  generateReport(scanId: string, format: ReportFormat): Promise<ReportResponse>;
-  listReports(scanId: string): Promise<ReportListResponse>;
-  getServiceDetails(scanId: string, serviceId: string): Promise<ServiceDetails>;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  startTime: string;
+  endTime?: string;
+  progress: number;
+  configuration: {
+    ports: string[];
+    methods: string[];
+    options: Record<string, any>;
+  };
+  services: Array<{
+    id: string;
+    port: number;
+    protocol: string;
+    service: string;
+    version?: string;
+    status: string;
+  }>;
+  summary: {
+    totalServices: number;
+    vulnerabilitiesBySeverity: {
+      critical: number;
+      high: number;
+      medium: number;
+      low: number;
+    };
+  };
 }
 ```
 
 ## Data Models
 
-### Scan Model
+### Core Models
+
 ```typescript
 // src/types/scan.ts
-interface Scan {
+export interface Scan {
   id: string;
   target: string;
-  method: ScanMethod;
-  scanType: ScanType;
   status: ScanStatus;
-  startTime: string;
-  endTime?: string;
-  progress?: number;
-  ports?: string;
-  results?: ScanResults;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ScanResults {
-  openPorts: Port[];
-  vulnerabilities: Vulnerability[];
+  startTime: Date;
+  endTime?: Date;
+  progress: number;
+  configuration: ScanConfiguration;
   services: Service[];
-  logs: ScanLog[];
+  summary: ScanSummary;
 }
 
-interface Port {
-  number: number;
-  service: string;
-  state: string;
+// src/types/service.ts
+export interface Service {
+  id: string;
+  port: number;
+  protocol: string;
+  name: string;
   version?: string;
-  protocol?: string;
+  state: string;
   banner?: string;
+  vulnerabilities: Vulnerability[];
+  details: ServiceDetails;
 }
-```
 
-### Vulnerability Model
-```typescript
 // src/types/vulnerability.ts
-interface Vulnerability {
+export interface Vulnerability {
   id: string;
   cveId?: string;
-  severity: 'High' | 'Medium' | 'Low';
+  severity: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   description: string;
-  recommendation: string;
+  impact: string;
+  solution: string;
   references: string[];
-  affectedPorts: number[];
-  discoveredAt: string;
 }
 ```
 
 ## Authentication
 
-### Implementation Steps
-1. Create AuthContext and Provider:
-```typescript
-// src/contexts/AuthContext.tsx
-interface AuthContextType {
-  user: UserProfile | null;
-  isAuthenticated: boolean;
-  login: (credentials: GoogleAuthCredentials) => Promise<void>;
-  logout: () => Promise<void>;
-}
+### Implementation
 
-export const AuthContext = createContext<AuthContextType>(null!);
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  
-  // Implementation...
-}
-```
-
-2. API Client Setup:
 ```typescript
 // src/api/client.ts
 import axios from 'axios';
@@ -172,31 +152,61 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem('auth_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized access
+      localStorage.removeItem('auth_token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 ```
 
 ## WebSocket Integration
 
-### Real-time Updates
+### Connection Setup
+
 ```typescript
 // src/hooks/useWebSocket.ts
+import { useEffect, useRef, useState } from 'react';
+import { ScanProgress } from '../types';
+
 export function useWebSocket(scanId: string) {
   const socket = useRef<WebSocket | null>(null);
   const [scanProgress, setScanProgress] = useState<ScanProgress | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const token = localStorage.getItem('auth_token');
     socket.current = new WebSocket(
-      `${process.env.REACT_APP_WS_URL}/scans/${scanId}`
+      `${process.env.REACT_APP_WS_URL}/scans/${scanId}?token=${token}`
     );
 
     socket.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setScanProgress(data);
+      try {
+        const data = JSON.parse(event.data);
+        setScanProgress(data);
+      } catch (err) {
+        setError(new Error('Failed to parse WebSocket message'));
+      }
+    };
+
+    socket.current.onerror = (event) => {
+      setError(new Error('WebSocket connection error'));
+    };
+
+    socket.current.onclose = () => {
+      // Implement reconnection logic if needed
     };
 
     return () => {
@@ -204,196 +214,265 @@ export function useWebSocket(scanId: string) {
     };
   }, [scanId]);
 
-  return scanProgress;
+  return { scanProgress, error };
 }
 ```
 
-## File Structure
+## Error Handling
 
-```
-src/
-├── api/
-│   ├── auth.ts
-│   ├── scans.ts
-│   ├── reports.ts
-│   └── client.ts
-├── contexts/
-│   ├── AuthContext.tsx
-│   └── ScanContext.tsx
-├── hooks/
-│   ├── useAuth.ts
-│   ├── useScan.ts
-│   └── useWebSocket.ts
-├── services/
-│   ├── scanService.ts
-│   └── reportService.ts
-└── types/
-    ├── scan.ts
-    ├── vulnerability.ts
-    └── api.ts
-```
-
-## Implementation Guide
-
-### 1. Set Up API Integration
-
-1. Install required dependencies:
-```bash
-npm install axios @tanstack/react-query jwt-decode
-```
-
-2. Create API client configuration:
-```typescript
-// src/config/api.ts
-export const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_API_URL,
-  WS_URL: process.env.REACT_APP_WS_URL,
-  TIMEOUT: 30000,
-};
-```
-
-### 2. Update Components
-
-#### DashboardPage
-```typescript
-// src/pages/DashboardPage.tsx
-export function DashboardPage() {
-  const { data: scans, isLoading } = useQuery(['scans'], () => 
-    scanService.listScans()
-  );
-
-  const startScanMutation = useMutation(
-    (scanData: CreateScanParams) => scanService.createScan(scanData),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['scans']);
-      },
-    }
-  );
-
-  // Implementation...
-}
-```
-
-#### ScanDetailsPage
-```typescript
-// src/pages/ScanDetailsPage.tsx
-export function ScanDetailsPage() {
-  const { scanId } = useParams<{ scanId: string }>();
-  const scanProgress = useWebSocket(scanId);
-  
-  const { data: scanDetails } = useQuery(
-    ['scan', scanId],
-    () => scanService.getScanDetails(scanId)
-  );
-
-  // Implementation...
-}
-```
-
-### 3. Error Handling
+### Error Types
 
 ```typescript
-// src/utils/errorHandler.ts
+// src/types/errors.ts
 export class ApiError extends Error {
   constructor(
     public status: number,
     public message: string,
+    public code: string,
     public details?: any
   ) {
     super(message);
+    this.name = 'ApiError';
   }
 }
 
-export function handleApiError(error: any): ApiError {
-  if (axios.isAxiosError(error)) {
-    return new ApiError(
-      error.response?.status || 500,
-      error.response?.data?.message || 'An unexpected error occurred',
-      error.response?.data?.details
-    );
+export class NetworkError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NetworkError';
   }
-  return new ApiError(500, 'An unexpected error occurred');
+}
+
+export class WebSocketError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WebSocketError';
+  }
 }
 ```
 
-### 4. Environment Setup
-
-Create `.env` file:
-```env
-REACT_APP_API_URL=http://localhost:8000/api
-REACT_APP_WS_URL=ws://localhost:8000/ws
-REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
-```
-
-## Backend Requirements
-
-### Required Endpoints
-
-1. Authentication:
-   - POST /api/auth/google
-   - POST /api/auth/refresh
-   - POST /api/auth/logout
-
-2. Scans:
-   - GET /api/scans
-   - POST /api/scans
-   - GET /api/scans/{id}
-   - DELETE /api/scans/{id}
-   - POST /api/scans/{id}/cancel
-
-3. Reports:
-   - GET /api/scans/{id}/report
-   - GET /api/scans/{id}/services/{serviceId}
-
-### WebSocket Events
+### Error Handling Utility
 
 ```typescript
-interface WebSocketEvent {
-  type: 'SCAN_PROGRESS' | 'SCAN_COMPLETE' | 'SCAN_ERROR';
-  data: {
-    scanId: string;
-    progress?: number;
-    message?: string;
-    error?: string;
-    results?: ScanResults;
-  };
+// src/utils/errorHandler.ts
+import { ApiError, NetworkError } from '../types/errors';
+
+export const handleApiError = (error: any) => {
+  if (error.response) {
+    // API error with response
+    throw new ApiError(
+      error.response.status,
+      error.response.data.message,
+      error.response.data.code,
+      error.response.data.details
+    );
+  } else if (error.request) {
+    // Network error
+    throw new NetworkError('Network error occurred');
+  } else {
+    // Other errors
+    throw new Error('An unexpected error occurred');
+  }
+};
+```
+
+## Environment Setup
+
+### Environment Variables
+
+```env
+# .env.development
+REACT_APP_API_URL=http://localhost:8000/api/v1
+REACT_APP_WS_URL=ws://localhost:8000/ws
+REACT_APP_ENV=development
+
+# .env.production
+REACT_APP_API_URL=https://api.vulnscan.com/api/v1
+REACT_APP_WS_URL=wss://api.vulnscan.com/ws
+REACT_APP_ENV=production
+```
+
+## Integration Steps
+
+1. **API Client Setup**
+   - Install required dependencies:
+     ```bash
+     npm install axios @tanstack/react-query
+     ```
+   - Configure API client with base URL and interceptors
+   - Set up authentication handling
+
+2. **Data Fetching Setup**
+   - Implement React Query for data fetching:
+     ```typescript
+     // src/hooks/useScans.ts
+     import { useQuery } from '@tanstack/react-query';
+     import { scanService } from '../services/scanService';
+
+     export function useScans() {
+       return useQuery({
+         queryKey: ['scans'],
+         queryFn: () => scanService.listScans(),
+       });
+     }
+     ```
+
+3. **WebSocket Integration**
+   - Set up WebSocket connection for real-time updates
+   - Implement reconnection logic
+   - Handle connection errors
+
+4. **Error Handling**
+   - Implement global error boundary
+   - Set up error tracking (e.g., Sentry)
+   - Create error handling utilities
+
+5. **Authentication**
+   - Implement authentication flow
+   - Set up protected routes
+   - Handle token management
+
+6. **Testing**
+   - Update tests to mock API calls
+   - Add integration tests
+   - Test error scenarios
+
+### Example Service Implementation
+
+```typescript
+// src/services/scanService.ts
+import { apiClient } from '../api/client';
+import { handleApiError } from '../utils/errorHandler';
+import type { Scan, ScanConfiguration } from '../types';
+
+export const scanService = {
+  listScans: async () => {
+    try {
+      const response = await apiClient.get('/scans');
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  getScanDetails: async (id: string) => {
+    try {
+      const response = await apiClient.get(`/scans/${id}`);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  createScan: async (config: ScanConfiguration) => {
+    try {
+      const response = await apiClient.post('/scans', config);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  stopScan: async (id: string) => {
+    try {
+      const response = await apiClient.put(`/scans/${id}/stop`);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  deleteScan: async (id: string) => {
+    try {
+      await apiClient.delete(`/scans/${id}`);
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+};
+```
+
+### Example Component Integration
+
+```typescript
+// src/pages/DashboardPage.tsx
+import { useScans } from '../hooks/useScans';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+
+export function DashboardPage() {
+  const { data: scans, isLoading, error } = useScans();
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error} />;
+  }
+
+  return (
+    <ErrorBoundary>
+      <div className="dashboard">
+        {/* Render scans data */}
+      </div>
+    </ErrorBoundary>
+  );
 }
 ```
 
 ## Security Considerations
 
-1. **Authentication**:
-   - Use JWT tokens with short expiration
-   - Implement refresh token rotation
-   - Store tokens securely (HttpOnly cookies)
+1. **Authentication**
+   - Use secure token storage
+   - Implement token refresh mechanism
+   - Handle session expiration
 
-2. **API Security**:
+2. **Data Protection**
+   - Encrypt sensitive data
    - Implement rate limiting
-   - Use CORS properly
-   - Validate all inputs
-   - Sanitize outputs
+   - Use HTTPS for all API calls
 
-3. **WebSocket Security**:
+3. **Error Handling**
+   - Sanitize error messages
+   - Log security-related errors
+   - Implement proper error boundaries
+
+4. **WebSocket Security**
    - Authenticate WebSocket connections
-   - Validate message formats
-   - Implement heartbeat mechanism
+   - Validate messages
+   - Implement reconnection with exponential backoff
 
-## Next Steps
+## Deployment Considerations
 
-1. Set up the backend server (FastAPI/Django)
-2. Create database models
-3. Implement authentication system
-4. Create scan execution service
-5. Set up WebSocket server
-6. Implement report generation
-7. Add error handling and logging
-8. Set up CI/CD pipeline
+1. **Environment Configuration**
+   - Use environment-specific variables
+   - Configure CORS properly
+   - Set up proper SSL certificates
 
-Remember to:
-- Use TypeScript for type safety
-- Write tests for critical functionality
-- Document API endpoints
-- Monitor performance
-- Implement proper error handling
-- Set up logging and monitoring 
+2. **Performance**
+   - Implement caching strategies
+   - Use compression
+   - Optimize bundle size
+
+3. **Monitoring**
+   - Set up error tracking
+   - Monitor API performance
+   - Track WebSocket connections
+
+## Testing Strategy
+
+1. **Unit Tests**
+   - Test API client functions
+   - Test error handling
+   - Test WebSocket hooks
+
+2. **Integration Tests**
+   - Test API integration
+   - Test WebSocket integration
+   - Test error scenarios
+
+3. **End-to-End Tests**
+   - Test complete user flows
+   - Test error recovery
+   - Test real-time updates 
